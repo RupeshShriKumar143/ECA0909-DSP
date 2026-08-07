@@ -1,0 +1,127 @@
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy.signal import buttord, butter, freqz, lfilter, group_delay, tf2zpk
+
+# -------------------------------------------------------
+# Input Specifications
+# -------------------------------------------------------
+Fs = 10000          # Sampling Frequency (Hz)
+Fp = 3000           # Passband Frequency (Hz)
+Fst = 2000          # Stopband Frequency (Hz)
+Rp = 1              # Passband Ripple (dB)
+Rs = 60             # Stopband Attenuation (dB)
+
+# -------------------------------------------------------
+# Normalize Frequencies
+# -------------------------------------------------------
+Wp = Fp/(Fs/2)
+Ws = Fst/(Fs/2)
+
+# -------------------------------------------------------
+# Butterworth High Pass Filter Design
+# -------------------------------------------------------
+N, Wn = buttord(Wp, Ws, Rp, Rs)
+b, a = butter(N, Wn, btype='high')
+
+print("Objective 1")
+print("----------------------------")
+print("Minimum Filter Order (N) =", N)
+print("Cutoff Frequency (Wn) =", round(Wn,4))
+
+# -------------------------------------------------------
+# Objective 2 : Magnitude & Phase Response
+# -------------------------------------------------------
+w, h = freqz(b, a, worN=1024)
+
+plt.figure(figsize=(8,4))
+plt.plot(w/np.pi,20*np.log10(np.abs(h)+1e-10))
+plt.title("Magnitude Response")
+plt.xlabel("Normalized Frequency (×π rad/sample)")
+plt.ylabel("Magnitude (dB)")
+plt.grid(True)
+plt.show()
+
+plt.figure(figsize=(8,4))
+plt.plot(w/np.pi,np.unwrap(np.angle(h))*180/np.pi)
+plt.title("Phase Response")
+plt.xlabel("Normalized Frequency (×π rad/sample)")
+plt.ylabel("Phase (degrees)")
+plt.grid(True)
+plt.show()
+
+# -------------------------------------------------------
+# Objective 3 : Impulse Response
+# -------------------------------------------------------
+impulse = np.zeros(50)
+impulse[0] = 1
+
+imp = lfilter(b,a,impulse)
+
+plt.figure(figsize=(8,4))
+plt.stem(range(50),imp)
+plt.title("Impulse Response")
+plt.xlabel("Samples")
+plt.ylabel("Amplitude")
+plt.grid(True)
+plt.show()
+
+# -------------------------------------------------------
+# Objective 4 : Step Response
+# -------------------------------------------------------
+step = np.ones(150)
+step_resp = lfilter(b,a,step)
+
+plt.figure(figsize=(8,4))
+plt.stem(range(150),step_resp)
+plt.title("Step Response")
+plt.xlabel("Samples")
+plt.ylabel("Amplitude")
+plt.grid(True)
+plt.show()
+
+# -------------------------------------------------------
+# Objective 5 : Group Delay
+# -------------------------------------------------------
+w, gd = group_delay((b,a))
+
+plt.figure(figsize=(8,4))
+plt.plot(w/np.pi,gd)
+plt.title("Group Delay")
+plt.xlabel("Normalized Frequency (×π rad/sample)")
+plt.ylabel("Delay (samples)")
+plt.grid(True)
+plt.show()
+
+# -------------------------------------------------------
+# Objective 6 : Pole-Zero Plot
+# -------------------------------------------------------
+z,p,k = tf2zpk(b,a)
+
+plt.figure(figsize=(6,6))
+
+plt.scatter(np.real(z),np.imag(z),
+            facecolors='none',
+            edgecolors='blue',
+            s=80,
+            label='Zeros')
+
+plt.scatter(np.real(p),np.imag(p),
+            marker='x',
+            color='red',
+            s=80,
+            label='Poles')
+
+theta=np.linspace(0,2*np.pi,300)
+plt.plot(np.cos(theta),np.sin(theta),'k--')
+
+plt.axhline(0,color='black')
+plt.axvline(0,color='black')
+
+plt.xlabel("Real Part")
+plt.ylabel("Imaginary Part")
+plt.title("Pole-Zero Plot")
+plt.axis('equal')
+plt.grid(True)
+plt.legend()
+
+plt.show()
